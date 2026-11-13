@@ -27,7 +27,7 @@ struct ContentView: View {
                     }.disabled(sending).accessibilityLabel("PC에 WOL 패킷 보내기")
                     Text(sending ? "전송 중…" : "PC 깨우기").font(.title2.bold())
                     Text(message).font(.callout).foregroundStyle(failed ? Color.orange : Color.secondary)
-                        .multilineTextAlignment(.center).accessibilityLiveRegion(.polite)
+                        .multilineTextAlignment(.center)
                     VStack(alignment: .leading, spacing: 16) {
                         Text("연결 설정").font(.headline)
                         field("공인 IPv4 주소", text: $ip, placeholder: "203.0.113.10", keyboard: .decimalPad)
