@@ -1,0 +1,44 @@
+name: Build unsigned iOS IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test packet and validation
+        run: |
+          swiftc Sources/MagicPacket.swift Tests/main.swift -o /tmp/wol-tests
+          /tmp/wol-tests
+      - name: Generate Xcode project
+        run: |
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen generate
+      - name: Build for physical iPhone without signing
+        run: |
+          set -o pipefail
+          xcodebuild -version
+          xcodebuild -project WakeMyPC.xcodeproj -scheme WakeMyPC -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee build.log
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p package/Payload
+          cp -R build/Build/Products/Release-iphoneos/WakeMyPC.app package/Payload/
+          test -f package/Payload/WakeMyPC.app/WakeMyPC
+          cd package
+          /usr/bin/zip -qry ../WakeMyPC-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WakeMyPC-unsigned
+          path: WakeMyPC-unsigned.ipa
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
